@@ -10,6 +10,18 @@ vi.mock("../../auto-reply/commands-registry.js", () => ({
       description: "Ping the bot",
       category: "utility",
       acceptsArgs: false,
+      args: [
+        {
+          name: "mode",
+          description: "Mode",
+          choices: ["off", { value: "low", label: "Low" }],
+        },
+        {
+          name: "dynamic",
+          description: "Dynamic",
+          choices: () => [],
+        },
+      ],
     },
     {
       key: "dock:telegram",
@@ -59,12 +71,28 @@ describe("gateway commands.list", () => {
         description: "Ping the bot",
         category: "utility",
         acceptsArgs: false,
+        args: [
+          {
+            name: "mode",
+            description: "Mode",
+            choices: [
+              { value: "off", label: "off" },
+              { value: "low", label: "Low" },
+            ],
+          },
+          {
+            name: "dynamic",
+            description: "Dynamic",
+            choices: undefined,
+          },
+        ],
       },
       {
         name: "dock:telegram",
         description: "Dock Telegram",
         category: "general",
         acceptsArgs: true,
+        args: undefined,
       },
     ]);
   });
