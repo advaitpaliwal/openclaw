@@ -33,17 +33,11 @@ function redactWebhookUrl(url: string): string {
 
 function resolveCronWebhookTarget(params: {
   delivery?: { mode?: string; to?: string };
-  fallbackUrl?: string;
-  legacyNotify?: boolean;
 }): string | null {
   const mode = params.delivery?.mode?.trim().toLowerCase();
   if (mode === "webhook") {
     const url = params.delivery?.to?.trim();
     return url ? url : null;
-  }
-  if (params.legacyNotify === true) {
-    const fallback = params.fallbackUrl?.trim();
-    return fallback || null;
   }
   return null;
 }
@@ -121,7 +115,6 @@ export function buildGatewayCronService(params: {
     onEvent: (evt) => {
       params.broadcast("cron", evt, { dropIfSlow: true });
       if (evt.action === "finished") {
-        const fallbackWebhookUrl = params.cfg.cron?.webhook?.trim();
         const webhookToken = params.cfg.cron?.webhookToken?.trim();
         const job = cron.getJob(evt.jobId);
         const webhookUrl = resolveCronWebhookTarget({
@@ -129,8 +122,6 @@ export function buildGatewayCronService(params: {
             job?.delivery && typeof job.delivery.mode === "string"
               ? { mode: job.delivery.mode, to: job.delivery.to }
               : undefined,
-          fallbackUrl: fallbackWebhookUrl,
-          legacyNotify: (job as { notify?: unknown } | undefined)?.notify === true,
         });
         if (webhookUrl && evt.summary) {
           const headers: Record<string, string> = {

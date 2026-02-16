@@ -347,7 +347,6 @@ Notes:
     enabled: true, // default true
     store: "~/.openclaw/cron/jobs.json",
     maxConcurrentRuns: 1, // default 1
-    webhook: "https://example.invalid/cron-finished", // legacy fallback for old jobs using notify=true
     webhookToken: "replace-with-dedicated-webhook-token", // optional bearer token for webhook mode
   },
 }
@@ -359,7 +358,6 @@ Webhook behavior:
 - Payload is the cron finished event JSON.
 - If `cron.webhookToken` is set, auth header is `Authorization: Bearer <cron.webhookToken>`.
 - If `cron.webhookToken` is not set, no `Authorization` header is sent.
-- `cron.webhook` remains as a legacy fallback only for existing jobs that still have `notify: true`.
 
 Disable cron entirely:
 

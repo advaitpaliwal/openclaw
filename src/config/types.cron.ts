@@ -2,8 +2,6 @@ export type CronConfig = {
   enabled?: boolean;
   store?: string;
   maxConcurrentRuns?: number;
-  /** Legacy fallback endpoint for older jobs that still use notify=true. */
-  webhook?: string;
   /** Bearer token for cron webhook POST delivery. */
   webhookToken?: string;
   /**
