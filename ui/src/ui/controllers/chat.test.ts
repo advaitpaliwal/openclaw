@@ -125,7 +125,39 @@ describe("handleChatEvent", () => {
     expect(state.chatMessages).toEqual([existingMessage, partialMessage]);
   });
 
-  it("processes aborted from own run without message and keeps streamed partial", () => {
+  it("falls back to streamed partial when aborted payload message is invalid", () => {
+    const existingMessage = {
+      role: "user",
+      content: [{ type: "text", text: "Hi" }],
+      timestamp: 1,
+    };
+    const state = createState({
+      sessionKey: "main",
+      chatRunId: "run-1",
+      chatStream: "Partial reply",
+      chatStreamStartedAt: 100,
+      chatMessages: [existingMessage],
+    });
+    const payload = {
+      runId: "run-1",
+      sessionKey: "main",
+      state: "aborted",
+      message: "not-an-assistant-message",
+    } as unknown as ChatEventPayload;
+
+    expect(handleChatEvent(state, payload)).toBe("aborted");
+    expect(state.chatRunId).toBe(null);
+    expect(state.chatStream).toBe(null);
+    expect(state.chatStreamStartedAt).toBe(null);
+    expect(state.chatMessages).toHaveLength(2);
+    expect(state.chatMessages[0]).toEqual(existingMessage);
+    expect(state.chatMessages[1]).toMatchObject({
+      role: "assistant",
+      content: [{ type: "text", text: "Partial reply" }],
+    });
+  });
+
+  it("falls back to streamed partial when aborted payload has non-assistant role", () => {
     const existingMessage = {
       role: "user",
       content: [{ type: "text", text: "Hi" }],
@@ -142,14 +174,14 @@ describe("handleChatEvent", () => {
       runId: "run-1",
       sessionKey: "main",
       state: "aborted",
+      message: {
+        role: "user",
+        content: [{ type: "text", text: "unexpected" }],
+      },
     };
 
     expect(handleChatEvent(state, payload)).toBe("aborted");
-    expect(state.chatRunId).toBe(null);
-    expect(state.chatStream).toBe(null);
-    expect(state.chatStreamStartedAt).toBe(null);
     expect(state.chatMessages).toHaveLength(2);
-    expect(state.chatMessages[0]).toEqual(existingMessage);
     expect(state.chatMessages[1]).toMatchObject({
       role: "assistant",
       content: [{ type: "text", text: "Partial reply" }],

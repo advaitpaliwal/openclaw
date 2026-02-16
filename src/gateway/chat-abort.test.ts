@@ -48,6 +48,9 @@ describe("abortChatRunById", () => {
     const sessionKey = "main";
     const entry = createActiveEntry(sessionKey);
     const ops = createOps({ runId, entry, buffer: "  Partial reply  " });
+    ops.agentRunSeq.set(runId, 2);
+    ops.agentRunSeq.set("client-run-1", 4);
+    ops.removeChatRun.mockReturnValue({ sessionKey, clientRunId: "client-run-1" });
 
     const result = abortChatRunById(ops, { runId, sessionKey, stopReason: "user" });
 
@@ -57,6 +60,8 @@ describe("abortChatRunById", () => {
     expect(ops.chatRunBuffers.has(runId)).toBe(false);
     expect(ops.chatDeltaSentAt.has(runId)).toBe(false);
     expect(ops.removeChatRun).toHaveBeenCalledWith(runId, runId, sessionKey);
+    expect(ops.agentRunSeq.has(runId)).toBe(false);
+    expect(ops.agentRunSeq.has("client-run-1")).toBe(false);
 
     expect(ops.broadcast).toHaveBeenCalledTimes(1);
     const payload = ops.broadcast.mock.calls[0]?.[1] as Record<string, unknown>;
@@ -64,7 +69,7 @@ describe("abortChatRunById", () => {
       expect.objectContaining({
         runId,
         sessionKey,
-        seq: 1,
+        seq: 3,
         state: "aborted",
         stopReason: "user",
       }),

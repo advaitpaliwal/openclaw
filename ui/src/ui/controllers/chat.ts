@@ -58,6 +58,20 @@ function dataUrlToBase64(dataUrl: string): { content: string; mimeType: string }
   return { mimeType: match[1], content: match[2] };
 }
 
+function normalizeAbortedAssistantMessage(message: unknown): Record<string, unknown> | null {
+  if (!message || typeof message !== "object") {
+    return null;
+  }
+  const candidate = message as Record<string, unknown>;
+  if (candidate.role !== "assistant") {
+    return null;
+  }
+  if (!("content" in candidate) || !Array.isArray(candidate.content)) {
+    return null;
+  }
+  return candidate;
+}
+
 export async function sendChatMessage(
   state: ChatState,
   message: string,
@@ -198,8 +212,9 @@ export function handleChatEvent(state: ChatState, payload?: ChatEventPayload) {
     state.chatRunId = null;
     state.chatStreamStartedAt = null;
   } else if (payload.state === "aborted") {
-    if (payload.message !== undefined) {
-      state.chatMessages = [...state.chatMessages, payload.message];
+    const normalizedMessage = normalizeAbortedAssistantMessage(payload.message);
+    if (normalizedMessage) {
+      state.chatMessages = [...state.chatMessages, normalizedMessage];
     } else {
       const streamedText = state.chatStream ?? "";
       if (streamedText.trim()) {
