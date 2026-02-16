@@ -30,6 +30,32 @@ describe("applyJobPatch", () => {
     expect(job.delivery).toBeUndefined();
   });
 
+  it("keeps webhook delivery when switching to main session", () => {
+    const now = Date.now();
+    const job: CronJob = {
+      id: "job-webhook",
+      name: "job-webhook",
+      enabled: true,
+      createdAtMs: now,
+      updatedAtMs: now,
+      schedule: { kind: "every", everyMs: 60_000 },
+      sessionTarget: "isolated",
+      wakeMode: "now",
+      payload: { kind: "agentTurn", message: "do it" },
+      delivery: { mode: "webhook", to: "https://example.invalid/cron" },
+      state: {},
+    };
+
+    const patch: CronJobPatch = {
+      sessionTarget: "main",
+      payload: { kind: "systemEvent", text: "ping" },
+    };
+
+    expect(() => applyJobPatch(job, patch)).not.toThrow();
+    expect(job.sessionTarget).toBe("main");
+    expect(job.delivery).toEqual({ mode: "webhook", to: "https://example.invalid/cron" });
+  });
+
   it("maps legacy payload delivery updates onto delivery", () => {
     const now = Date.now();
     const job: CronJob = {
@@ -99,25 +125,5 @@ describe("applyJobPatch", () => {
       to: "999",
       bestEffort: undefined,
     });
-  });
-
-  it("updates notify via patch", () => {
-    const now = Date.now();
-    const job: CronJob = {
-      id: "job-4",
-      name: "job-4",
-      enabled: true,
-      notify: false,
-      createdAtMs: now,
-      updatedAtMs: now,
-      schedule: { kind: "every", everyMs: 60_000 },
-      sessionTarget: "isolated",
-      wakeMode: "now",
-      payload: { kind: "agentTurn", message: "do it" },
-      state: {},
-    };
-
-    expect(() => applyJobPatch(job, { notify: true })).not.toThrow();
-    expect(job.notify).toBe(true);
   });
 });

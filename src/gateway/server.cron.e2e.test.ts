@@ -83,11 +83,11 @@ describe("gateway server cron", () => {
       const addRes = await rpcReq(ws, "cron.add", {
         name: "daily",
         enabled: true,
-        notify: true,
         schedule: { kind: "every", everyMs: 60_000 },
         sessionTarget: "main",
         wakeMode: "next-heartbeat",
         payload: { kind: "systemEvent", text: "hello" },
+        delivery: { mode: "webhook", to: "https://example.invalid/cron-finished" },
       });
       expect(addRes.ok).toBe(true);
       expect(typeof (addRes.payload as { id?: unknown } | null)?.id).toBe("string");
@@ -101,8 +101,8 @@ describe("gateway server cron", () => {
       expect((jobs as unknown[]).length).toBe(1);
       expect(((jobs as Array<{ name?: unknown }>)[0]?.name as string) ?? "").toBe("daily");
       expect(
-        ((jobs as Array<{ notify?: unknown }>)[0]?.notify as boolean | undefined) ?? false,
-      ).toBe(true);
+        ((jobs as Array<{ delivery?: { mode?: unknown } }>)[0]?.delivery?.mode as string) ?? "",
+      ).toBe("webhook");
 
       const routeAtMs = Date.now() - 1;
       const routeRes = await rpcReq(ws, "cron.add", {
@@ -423,7 +423,7 @@ describe("gateway server cron", () => {
     }
   }, 45_000);
 
-  test("posts webhooks only when notify is true and summary exists", async () => {
+  test("posts webhooks only when delivery.mode is webhook and summary exists", async () => {
     const prevSkipCron = process.env.OPENCLAW_SKIP_CRON;
     process.env.OPENCLAW_SKIP_CRON = "0";
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-cron-webhook-"));
@@ -440,7 +440,6 @@ describe("gateway server cron", () => {
       JSON.stringify(
         {
           cron: {
-            webhook: "https://example.invalid/cron-finished",
             webhookToken: "cron-webhook-token",
           },
         },
@@ -458,13 +457,13 @@ describe("gateway server cron", () => {
 
     try {
       const notifyRes = await rpcReq(ws, "cron.add", {
-        name: "notify true",
+        name: "webhook enabled",
         enabled: true,
-        notify: true,
         schedule: { kind: "every", everyMs: 60_000 },
         sessionTarget: "main",
         wakeMode: "next-heartbeat",
         payload: { kind: "systemEvent", text: "send webhook" },
+        delivery: { mode: "webhook", to: "https://example.invalid/cron-finished" },
       });
       expect(notifyRes.ok).toBe(true);
       const notifyJobIdValue = (notifyRes.payload as { id?: unknown } | null)?.id;
@@ -492,9 +491,8 @@ describe("gateway server cron", () => {
       expect(notifyBody.jobId).toBe(notifyJobId);
 
       const silentRes = await rpcReq(ws, "cron.add", {
-        name: "notify false",
+        name: "webhook disabled",
         enabled: true,
-        notify: false,
         schedule: { kind: "every", everyMs: 60_000 },
         sessionTarget: "main",
         wakeMode: "next-heartbeat",
@@ -513,13 +511,13 @@ describe("gateway server cron", () => {
 
       cronIsolatedRun.mockResolvedValueOnce({ status: "ok" });
       const noSummaryRes = await rpcReq(ws, "cron.add", {
-        name: "notify no summary",
+        name: "webhook no summary",
         enabled: true,
-        notify: true,
         schedule: { kind: "every", everyMs: 60_000 },
         sessionTarget: "isolated",
         wakeMode: "next-heartbeat",
         payload: { kind: "agentTurn", message: "test" },
+        delivery: { mode: "webhook", to: "https://example.invalid/cron-finished" },
       });
       expect(noSummaryRes.ok).toBe(true);
       const noSummaryJobIdValue = (noSummaryRes.payload as { id?: unknown } | null)?.id;

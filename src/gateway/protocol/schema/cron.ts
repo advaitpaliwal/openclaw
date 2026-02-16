@@ -75,7 +75,7 @@ const CronDeliveryBaseProperties = {
 
 export const CronDeliverySchema = Type.Object(
   {
-    mode: Type.Union([Type.Literal("none"), Type.Literal("announce")]),
+    mode: Type.Union([Type.Literal("none"), Type.Literal("announce"), Type.Literal("webhook")]),
     ...CronDeliveryBaseProperties,
   },
   { additionalProperties: false },
@@ -83,7 +83,9 @@ export const CronDeliverySchema = Type.Object(
 
 export const CronDeliveryPatchSchema = Type.Object(
   {
-    mode: Type.Optional(Type.Union([Type.Literal("none"), Type.Literal("announce")])),
+    mode: Type.Optional(
+      Type.Union([Type.Literal("none"), Type.Literal("announce"), Type.Literal("webhook")]),
+    ),
     ...CronDeliveryBaseProperties,
   },
   { additionalProperties: false },
@@ -111,7 +113,6 @@ export const CronJobSchema = Type.Object(
     name: NonEmptyString,
     description: Type.Optional(Type.String()),
     enabled: Type.Boolean(),
-    notify: Type.Optional(Type.Boolean()),
     deleteAfterRun: Type.Optional(Type.Boolean()),
     createdAtMs: Type.Integer({ minimum: 0 }),
     updatedAtMs: Type.Integer({ minimum: 0 }),
@@ -140,7 +141,6 @@ export const CronAddParamsSchema = Type.Object(
     agentId: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
     description: Type.Optional(Type.String()),
     enabled: Type.Optional(Type.Boolean()),
-    notify: Type.Optional(Type.Boolean()),
     deleteAfterRun: Type.Optional(Type.Boolean()),
     schedule: CronScheduleSchema,
     sessionTarget: Type.Union([Type.Literal("main"), Type.Literal("isolated")]),
@@ -157,7 +157,6 @@ export const CronJobPatchSchema = Type.Object(
     agentId: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
     description: Type.Optional(Type.String()),
     enabled: Type.Optional(Type.Boolean()),
-    notify: Type.Optional(Type.Boolean()),
     deleteAfterRun: Type.Optional(Type.Boolean()),
     schedule: Type.Optional(CronScheduleSchema),
     sessionTarget: Type.Optional(Type.Union([Type.Literal("main"), Type.Literal("isolated")])),

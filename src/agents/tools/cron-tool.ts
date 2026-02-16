@@ -217,10 +217,9 @@ JOB SCHEMA (for add action):
   "name": "string (optional)",
   "schedule": { ... },      // Required: when to run
   "payload": { ... },       // Required: what to execute
-  "delivery": { ... },      // Optional: announce summary (isolated only)
+  "delivery": { ... },      // Optional: announce summary or webhook POST
   "sessionTarget": "main" | "isolated",  // Required
-  "enabled": true | false,  // Optional, default true
-  "notify": true | false    // Optional webhook opt-in; set true for user-facing reminders
+  "enabled": true | false   // Optional, default true
 }
 
 SCHEDULE TYPES (schedule.kind):
@@ -239,15 +238,17 @@ PAYLOAD TYPES (payload.kind):
 - "agentTurn": Runs agent with message (isolated sessions only)
   { "kind": "agentTurn", "message": "<prompt>", "model": "<optional>", "thinking": "<optional>", "timeoutSeconds": <optional> }
 
-DELIVERY (isolated-only, top-level):
-  { "mode": "none|announce", "channel": "<optional>", "to": "<optional>", "bestEffort": <optional-bool> }
+DELIVERY (top-level):
+  { "mode": "none|announce|webhook", "channel": "<optional>", "to": "<optional>", "bestEffort": <optional-bool> }
   - Default for isolated agentTurn jobs (when delivery omitted): "announce"
-  - If the task needs to send to a specific chat/recipient, set delivery.channel/to here; do not call messaging tools inside the run.
+  - announce: send to chat channel (optional channel/to target)
+  - webhook: send finished-run event as HTTP POST to delivery.to (URL required)
+  - If the task needs to send to a specific chat/recipient, set announce delivery.channel/to; do not call messaging tools inside the run.
 
 CRITICAL CONSTRAINTS:
 - sessionTarget="main" REQUIRES payload.kind="systemEvent"
 - sessionTarget="isolated" REQUIRES payload.kind="agentTurn"
-- For reminders users should be notified about, set notify=true.
+- For webhook callbacks, use delivery.mode="webhook" with delivery.to set to a URL.
 Default: prefer isolated agentTurn jobs unless the user explicitly wants a main-session system event.
 
 WAKE MODES (for wake action):
@@ -294,7 +295,6 @@ Use jobId as the canonical identifier; id is accepted for compatibility. Use con
               "payload",
               "delivery",
               "enabled",
-              "notify",
               "description",
               "deleteAfterRun",
               "agentId",

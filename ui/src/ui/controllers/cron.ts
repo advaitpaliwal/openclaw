@@ -106,13 +106,20 @@ export async function addCronJob(state: CronState) {
   try {
     const schedule = buildCronSchedule(state.cronForm);
     const payload = buildCronPayload(state.cronForm);
+    const supportsAnnounce =
+      state.cronForm.sessionTarget === "isolated" && state.cronForm.payloadKind === "agentTurn";
+    const selectedDeliveryMode =
+      state.cronForm.deliveryMode === "announce" && !supportsAnnounce
+        ? "none"
+        : state.cronForm.deliveryMode;
     const delivery =
-      state.cronForm.sessionTarget === "isolated" &&
-      state.cronForm.payloadKind === "agentTurn" &&
-      state.cronForm.deliveryMode
+      selectedDeliveryMode && selectedDeliveryMode !== "none"
         ? {
-            mode: state.cronForm.deliveryMode === "announce" ? "announce" : "none",
-            channel: state.cronForm.deliveryChannel.trim() || "last",
+            mode: selectedDeliveryMode,
+            channel:
+              selectedDeliveryMode === "announce"
+                ? state.cronForm.deliveryChannel.trim() || "last"
+                : undefined,
             to: state.cronForm.deliveryTo.trim() || undefined,
           }
         : undefined;
@@ -122,7 +129,6 @@ export async function addCronJob(state: CronState) {
       description: state.cronForm.description.trim() || undefined,
       agentId: agentId || undefined,
       enabled: state.cronForm.enabled,
-      notify: state.cronForm.notify,
       schedule,
       sessionTarget: state.cronForm.sessionTarget,
       wakeMode: state.cronForm.wakeMode,

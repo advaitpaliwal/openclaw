@@ -41,8 +41,14 @@ export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "pay
 }
 
 function assertDeliverySupport(job: Pick<CronJob, "sessionTarget" | "delivery">) {
-  if (job.delivery && job.sessionTarget !== "isolated") {
-    throw new Error('cron delivery config is only supported for sessionTarget="isolated"');
+  if (!job.delivery) {
+    return;
+  }
+  if (job.delivery.mode === "webhook") {
+    return;
+  }
+  if (job.sessionTarget !== "isolated") {
+    throw new Error('cron channel delivery config is only supported for sessionTarget="isolated"');
   }
 }
 
@@ -258,7 +264,6 @@ export function createJob(state: CronServiceState, input: CronJobCreate): CronJo
     name: normalizeRequiredName(input.name),
     description: normalizeOptionalText(input.description),
     enabled,
-    notify: typeof input.notify === "boolean" ? input.notify : undefined,
     deleteAfterRun,
     createdAtMs: now,
     updatedAtMs: now,
@@ -286,9 +291,6 @@ export function applyJobPatch(job: CronJob, patch: CronJobPatch) {
   }
   if (typeof patch.enabled === "boolean") {
     job.enabled = patch.enabled;
-  }
-  if (typeof patch.notify === "boolean") {
-    job.notify = patch.notify;
   }
   if (typeof patch.deleteAfterRun === "boolean") {
     job.deleteAfterRun = patch.deleteAfterRun;
@@ -319,7 +321,7 @@ export function applyJobPatch(job: CronJob, patch: CronJobPatch) {
   if (patch.delivery) {
     job.delivery = mergeCronDelivery(job.delivery, patch.delivery);
   }
-  if (job.sessionTarget === "main" && job.delivery) {
+  if (job.sessionTarget === "main" && job.delivery?.mode !== "webhook") {
     job.delivery = undefined;
   }
   if (patch.state) {
