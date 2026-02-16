@@ -45,6 +45,10 @@ function assertDeliverySupport(job: Pick<CronJob, "sessionTarget" | "delivery">)
     return;
   }
   if (job.delivery.mode === "webhook") {
+    const target = typeof job.delivery.to === "string" ? job.delivery.to.trim() : "";
+    if (!target) {
+      throw new Error('cron webhook delivery requires non-empty delivery.to');
+    }
     return;
   }
   if (job.sessionTarget !== "isolated") {

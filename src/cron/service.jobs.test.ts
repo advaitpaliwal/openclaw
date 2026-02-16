@@ -126,4 +126,28 @@ describe("applyJobPatch", () => {
       bestEffort: undefined,
     });
   });
+
+  it("rejects webhook delivery without a target URL", () => {
+    const now = Date.now();
+    const job: CronJob = {
+      id: "job-webhook-invalid",
+      name: "job-webhook-invalid",
+      enabled: true,
+      createdAtMs: now,
+      updatedAtMs: now,
+      schedule: { kind: "every", everyMs: 60_000 },
+      sessionTarget: "main",
+      wakeMode: "now",
+      payload: { kind: "systemEvent", text: "ping" },
+      delivery: { mode: "webhook" },
+      state: {},
+    };
+
+    expect(() => applyJobPatch(job, { enabled: true })).toThrow(
+      "cron webhook delivery requires non-empty delivery.to",
+    );
+    expect(() => applyJobPatch(job, { delivery: { mode: "webhook", to: "" } })).toThrow(
+      "cron webhook delivery requires non-empty delivery.to",
+    );
+  });
 });
